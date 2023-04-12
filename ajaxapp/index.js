@@ -1,20 +1,25 @@
-function main() {
-  fetchUserInfo("js-primer-example");
+async function main() {
+  fetchUserInfo("js-primer-example")
+  try {
+    const userInfo = await fetchUserInfo("js-primer-example");
+    const view = createView(userInfo);
+    displayView(view);
+  } catch (error) {
+    // promiseチェーンの中で発生したエラーを受け取る
+    console.error(`エラーが発生しました(${error})`);
+  };
 }
 function fetchUserInfo(userId) {
-  fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`).then(response => {
+  return fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`).then(response => {
     if (!response.ok) {
-      console.error("エラーレスポンス", response);
+      return Promise.reject(new Error(`${response.status}: ${response.statusText}`))
     } else {
-      return response.json().then(userInfo => {
-        // HTMLの組み立て
-        const view = createView(userInfo);
-        displayView(view);
-      });
+      return response.json();
     }
-  }).catch(error => {
-    console.error(error);
   });
+}
+function getUserId() {
+  return document.getElementById("userId").value;
 }
 function createView(userInfo) {
   return escapeHTML`
@@ -31,4 +36,23 @@ function createView(userInfo) {
 function displayView(view) {
   const result = document.getElementById("result");
   result.innerHTML = view;
+}
+function escapeSpecialChars(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeHTML(strings, ...values) {
+  return strings.reduce((result, str, i) => {
+    const value = values[i - 1];
+    if (typeof value === "string") {
+      return result + escapeSpecialChars(value) + str;
+    } else {
+      return result + String(value) + str;
+    }
+  });
 }
